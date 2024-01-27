@@ -11,22 +11,25 @@ app.use(express.json());
 app.use(
   "/customer",
   session({
-    secret: "fingerprint_customer",
+    secret: process.env.SESSION_SECRET || "access",
     resave: true,
     saveUninitialized: true,
   })
 );
+app.use("/customer/auth/*", function authenticateUser(req, res, next) {
+  console.log("Auth Middleware - Session Data:", req.session);
 
-app.use("/customer/auth/*", function auth(req, res, next) {
   if (req.session.authorization) {
-    token = req.session.authorization["accessToken"];
+    const token = req.session.authorization.accessToken;
+    console.log("Auth Middleware - Token:", token);
 
-    //token verification
-    jwt.verify(token, "secret123", (err, user) => {
+    // Token verification
+    jwt.verify(token, process.env.JWT_SECRET || "access", (err, user) => {
       if (!err) {
         req.user = user;
         next();
       } else {
+        console.error("Error verifying token:", err);
         return res.status(403).json({ message: "User is not authenticated" });
       }
     });
